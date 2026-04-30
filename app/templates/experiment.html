@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Експеримент Шеннона</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .instructions {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+            margin-bottom: 30px;
+        }
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .stat-box {
+            flex: 1;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .stat-label {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        .game-container {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+        .context-display {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+            font-family: 'Courier New', monospace;
+            font-size: 1.3rem;
+            line-height: 1.8;
+            min-height: 80px;
+            word-wrap: break-word;
+            letter-spacing: 1px;
+        }
+        .cursor {
+            display: inline-block;
+            width: 3px;
+            height: 1.3rem;
+            background: #3498db;
+            animation: blink 1s infinite;
+            vertical-align: text-bottom;
+        }
+        @media (max-width: 600px) {
+            /* 1. Force the keyboard container to never exceed screen width */
+            .keyboard {
+                padding: 5px 2px !important;
+                margin: 10px 0 !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+                overflow: hidden !important;
+            }
+
+            /* 2. Remove gaps and center the keys */
+            .keyboard-row {
+                gap: 1px !important;
+                margin-bottom: 3px !important;
+                width: 100% !important;
+                display: flex !important;
+                flex-wrap: nowrap !important; /* Prevents rows from breaking */
+            }
+
+            /* 3. The "Tiny" Fix: flex-basis 0 allows keys to be as small as 1px if needed */
+            .keyboard-key {
+                flex: 1 1 0px !important;
+                min-width: 0 !important;
+                padding: 10px 0 !important;
+                font-size: 0.7rem !important;
+                border-width: 1px !important;
+                margin: 0 !important;
+                /* Keeps letters centered even when tiny */
+                display: flex !important;
+                align-items: center;
+                justify-content: center;
+                overflow: hidden;
+            }
+
+            /* 4. Spacebar needs to be flexible too */
+            .keyboard-key.space {
+                flex: 5 1 0px !important;
+                font-size: 0.6rem !important;
+                white-space: nowrap;
+            }
+
+            /* 5. Prevent the rest of the game from stretching the page */
+            .game-container {
+                padding: 10px !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
+            }
+
+            .context-display {
+                font-size: 1rem !important;
+                letter-spacing: 0px !important;
+            }
+        }
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        .input-section {
+            margin-bottom: 25px;
+            position: relative;
+        }
+        .input-section label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .input-group {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+        }
+        #guess-input {
+            width: 80px;
+            height: 80px;
+            padding: 0;
+            font-size: 2.5rem;
+            font-family: 'Courier New', monospace;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0;
+            text-align: center;
+        }
+        #guess-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        #guess-input:disabled {
+            background: #f8f9fa;
+            cursor: not-allowed;
+        }
+        #submit-guess-btn {
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
+            height: 80px;
+            padding: 0 30px;
+        }
+        .cooldown-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: transparent;
+            overflow: hidden;
+            z-index: 10;
+        }
+        .cooldown-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2980b9);
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+        .attempts-display {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffc107;
+        }
+        .attempts-label {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        .attempts-list {
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            letter-spacing: 3px;
+            color: #666;
+        }
+        .feedback {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .feedback.success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            color: #155724;
+        }
+        .feedback.error {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            color: #721c24;
+        }
+        .feedback.info {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            color: #0c5460;
+        }
+        .controls {
+            display: flex;
+            gap: 15px;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background: #6c757d;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .error-page {
+            text-align: center;
+            padding: 40px;
+        }
+        .error-page h2 {
+            color: #dc3545;
+        }
+        .completion-message {
+            background: #d4edda;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+            margin-bottom: 20px;
+        }
+        .keyboard {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 2px solid #ddd;
+            display: block;
+        }
+        .keyboard-title {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: 600;
+        }
+        .keyboard-row {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .keyboard-key {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            min-width: 35px;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .keyboard-key:hover {
+            background: #e8f4f8;
+            border-color: #3498db;
+        }
+        .keyboard-key.tried {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+        .keyboard-key.space {
+            min-width: 120px;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #ddd;
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .progress-container {
+            background: transparent;
+            padding: 8px 0 12px 0;
+            margin: 0 0 20px 0;
+        }
+        .progress-label {
+            text-align: center;
+            font-weight: 500;
+            color: #666;
+            margin-bottom: 4px;
+            font-size: 0.75rem;
+        }
+        .progress-bar-wrapper {
+            width: 100%;
+            height: 8px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745 0%, #5cb85c 30%, #ffc107 70%, #ff8c00 100%);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+            position: relative;
+        }
+        .progress-text {
+            text-align: center;
+            margin-top: 4px;
+            font-size: 0.7rem;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-container">
+        <div class="progress-label">Прогрес дослідження</div>
+        <div class="progress-bar-wrapper">
+            <div class="progress-bar-fill" style="width: {{ progress_percentage }}%"></div>
+        </div>
+        <div class="progress-text">{{ total_completed }} / {{ total_target }} завершених експериментів</div>
+    </div>
+
+    <h1>Експеримент Шеннона</h1>
+
+    <div id="loading" class="loading">
+        <p>Завантаження...</p>
+    </div>
+
+    <div id="error-page" class="error-page" style="display: none;">
+        <h2>Помилка</h2>
+        <p id="error-message"></p>
+    </div>
+
+    <div id="game-area" style="display: none;">
+        <div class="instructions">
+            <strong>Як грати:</strong> Введіть літеру, яка, на вашу думку, йде далі. Невдалі спроби відображаються нижче.
+            Загальна кількість спроб дорівнює довжині речення.
+            <br><br>
+            <strong>Зверніть увагу:</strong> Речення містять тільки літери та пробіли. <strong>Коми, апострофи та інші розділові знаки замінено на пропуски.</strong>
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat-box">
+                <div class="stat-label">Позиція</div>
+                <div class="stat-value" id="position-stat">0 / 0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Використано спроб</div>
+                <div class="stat-value" id="guesses-stat">0 / 0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Ваш рахунок</div>
+                <div class="stat-value" id="attempts-stat">0</div>
+            </div>
+        </div>
+
+        <div class="game-container">
+            <div class="context-display" id="context-display">
+                <span class="cursor"></span>
+            </div>
+
+            <div class="attempts-display" id="attempts-display" style="display: none;">
+                <div class="attempts-label">Невдалі спроби для цієї позиції:</div>
+                <div class="attempts-list" id="attempts-list"></div>
+            </div>
+
+            <div class="feedback" id="feedback"></div>
+
+            <div class="keyboard" id="keyboard">
+                <div class="keyboard-title">Використані літери</div>
+                <div class="keyboard-row">
+                    <div class="keyboard-key" data-key="Й">Й</div>
+                    <div class="keyboard-key" data-key="Ц">Ц</div>
+                    <div class="keyboard-key" data-key="У">У</div>
+                    <div class="keyboard-key" data-key="К">К</div>
+                    <div class="keyboard-key" data-key="Е">Е</div>
+                    <div class="keyboard-key" data-key="Н">Н</div>
+                    <div class="keyboard-key" data-key="Г">Г</div>
+                    <div class="keyboard-key" data-key="Ш">Ш</div>
+                    <div class="keyboard-key" data-key="Щ">Щ</div>
+                    <div class="keyboard-key" data-key="З">З</div>
+                    <div class="keyboard-key" data-key="Х">Х</div>
+                    <div class="keyboard-key" data-key="Ї">Ї</div>
+                </div>
+                <div class="keyboard-row">
+                    <div class="keyboard-key" data-key="Ф">Ф</div>
+                    <div class="keyboard-key" data-key="І">І</div>
+                    <div class="keyboard-key" data-key="В">В</div>
+                    <div class="keyboard-key" data-key="А">А</div>
+                    <div class="keyboard-key" data-key="П">П</div>
+                    <div class="keyboard-key" data-key="Р">Р</div>
+                    <div class="keyboard-key" data-key="О">О</div>
+                    <div class="keyboard-key" data-key="Л">Л</div>
+                    <div class="keyboard-key" data-key="Д">Д</div>
+                    <div class="keyboard-key" data-key="Ж">Ж</div>
+                    <div class="keyboard-key" data-key="Є">Є</div>
+                </div>
+                <div class="keyboard-row">
+                    <div class="keyboard-key" data-key="Ґ">Ґ</div>
+                    <div class="keyboard-key" data-key="Я">Я</div>
+                    <div class="keyboard-key" data-key="Ч">Ч</div>
+                    <div class="keyboard-key" data-key="С">С</div>
+                    <div class="keyboard-key" data-key="М">М</div>
+                    <div class="keyboard-key" data-key="И">И</div>
+                    <div class="keyboard-key" data-key="Т">Т</div>
+                    <div class="keyboard-key" data-key="Ь">Ь</div>
+                    <div class="keyboard-key" data-key="Б">Б</div>
+                    <div class="keyboard-key" data-key="Ю">Ю</div>
+                </div>
+                <div class="keyboard-row">
+                    <div class="keyboard-key space" data-key=" ">␣ (пробіл)</div>
+                </div>
+            </div>
+
+            <div class="input-section">
+                <div class="cooldown-bar">
+                    <div class="cooldown-progress" id="cooldown-progress"></div>
+                </div>
+                <label for="guess-input">Ваша відповідь:</label>
+                <div class="input-group">
+                    <input
+                        type="text"
+                        id="guess-input"
+                        maxlength="1"
+                        autocomplete="off"
+                        autofocus
+                        placeholder="?"
+                    >
+                    <button id="submit-guess-btn">Відправити (Enter)</button>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button id="finish-btn" style="display: none;">Продовжити</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const userId = new URLSearchParams(window.location.search).get('user_id');
+
+        if (!userId) {
+            showError('Недійсне посилання. Скористайтеся посиланням, яке вам надіслали.');
+        }
+
+        // Game state
+        let experimentId = null;
+        let sentenceId = null;
+        let sentenceLength = 0;
+        let maxGuesses = 0;
+        let currentPosition = 0;
+        let totalGuessesUsed = 0;
+        let currentAttempts = [];
+        let revealedText = '';
+        let isComplete = false;
+        let nextCorrectLetter = null;  // Preloaded correct letter for instant validation
+        let startPosition = 0;
+
+        // Request locking and cooldown
+        let isPending = false;
+        let cooldownTimer = null;
+        let cooldownInterval = null;
+        const COOLDOWN_MS_CORRECT = {{ cooldown_ms_correct }};
+        const COOLDOWN_MS_INCORRECT = {{ cooldown_ms_incorrect }};
+
+        // Initialize
+        async function init() {
+            try {
+                const response = await fetch('/api/v1/request_sentence', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId })
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    showError(data.detail || 'Не вдалося завантажити речення');
+                    return;
+                }
+
+                const data = await response.json();
+                experimentId = data.experiment_id;
+                sentenceId = data.sentence_id;
+                sentenceLength = data.sentence_length;
+                maxGuesses = data.max_guesses;
+
+                // Start with initial revealed characters
+                startPosition = data.start_position;
+                revealedText = data.initial_text;
+                currentPosition = data.start_position;
+                nextCorrectLetter = data.next_correct_letter;  // Preload first correct letter
+
+                // Defensive check
+                if (!nextCorrectLetter) {
+                    console.error('Warning: next_correct_letter not provided by server');
+                }
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('game-area').style.display = 'block';
+
+                updateDisplay();
+                document.getElementById('guess-input').focus();
+            } catch (error) {
+                showError('Проблема зі з\'єднанням. Перевірте інтернет.');
+            }
+        }
+
+        // Start cooldown with progress bar
+        function startCooldown(cooldownMs) {
+            isPending = true;
+            const inputEl = document.getElementById('guess-input');
+            const submitBtn = document.getElementById('submit-guess-btn');
+            const progressEl = document.getElementById('cooldown-progress');
+
+            inputEl.disabled = true;
+            submitBtn.disabled = true;
+
+            const startTime = Date.now();
+            const updateInterval = 50; // Update every 50ms for smooth animation
+
+            // Set initial progress to 100%
+            progressEl.style.width = '100%';
+
+            cooldownInterval = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                const remaining = cooldownMs - elapsed;
+                const progress = Math.max(0, (remaining / cooldownMs) * 100);
+
+                progressEl.style.width = `${progress}%`;
+
+                if (remaining <= 0) {
+                    clearInterval(cooldownInterval);
+                    progressEl.style.width = '0%';
+                }
+            }, updateInterval);
+
+            cooldownTimer = setTimeout(() => {
+                isPending = false;
+                inputEl.disabled = false;
+                submitBtn.disabled = false;
+                inputEl.focus();
+                clearInterval(cooldownInterval);
+                progressEl.style.width = '0%';
+            }, cooldownMs);
+        }
+
+        // Handle guess input - allow Enter key to submit
+        document.getElementById('guess-input').addEventListener('keypress', async (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const input = e.target.value.toUpperCase();
+                if (input.length > 0) {
+                    await handleGuessSubmit(input);
+                }
+            }
+        });
+
+        // Handle submit button click
+        document.getElementById('submit-guess-btn').addEventListener('click', async () => {
+            const input = document.getElementById('guess-input').value.toUpperCase();
+            if (input.length > 0) {
+                await handleGuessSubmit(input);
+            }
+        });
+
+        // Handle guess submission
+        async function handleGuessSubmit(input) {
+            // CRITICAL FIX: Check and set isPending ATOMICALLY to prevent race conditions
+            if (isPending || isComplete) {
+                return;
+            }
+
+            // Only allow Ukrainian letters and space
+            const ukrainianLetters = 'АБВГҐДЕЄЖЗИІЇЙКЛМНОПРСТУФХЦЧШЩЬЮЯ ';
+            if (!ukrainianLetters.includes(input)) {
+                showFeedback(`Недійсний символ: "${input}". Тільки українські літери.`, 'error');
+                document.getElementById('guess-input').value = '';
+                return;
+            }
+
+            // Check if already attempted for this position
+            if (currentAttempts.includes(input)) {
+                showFeedback('Ви вже вгадували цю літеру на цій позиції', 'error');
+                document.getElementById('guess-input').value = '';
+                return;
+            }
+
+            // CRITICAL: Set pending IMMEDIATELY before any async operations
+            // This prevents double-submission race conditions
+            isPending = true;
+
+            // Clear input and disable immediately to prevent user from typing more
+            const inputEl = document.getElementById('guess-input');
+            const submitBtn = document.getElementById('submit-guess-btn');
+            inputEl.value = '';
+            inputEl.disabled = true;
+            submitBtn.disabled = true;
+
+            try {
+                await submitGuess(input);
+            } catch (err) {
+                // If submission fails, re-enable input
+                isPending = false;
+                inputEl.disabled = false;
+                submitBtn.disabled = false;
+                inputEl.focus();
+            }
+        }
+
+        // Submit guess
+        async function submitGuess(character) {
+            // isPending already set by handleGuessSubmit to prevent race conditions
+            try {
+                const response = await fetch('/api/v1/submit_guess', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        experiment_id: experimentId,
+                        position: currentPosition,
+                        guessed_character: character
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    console.error('Server error:', error);
+                    showFeedback(error.detail || 'Помилка сервера', 'error');
+                    isPending = false;
+                    return;
+                }
+
+                // CRITICAL FIX: Use backend response as source of truth
+                const data = await response.json();
+                const isCorrect = data.is_correct;
+
+                // Update state from backend response
+                totalGuessesUsed = data.total_guesses_used;
+                if (data.next_correct_letter) nextCorrectLetter = data.next_correct_letter;
+                if (data.full_sentence) localStorage.setItem('completedSentence', data.full_sentence);
+
+                startCooldown(isCorrect ? COOLDOWN_MS_CORRECT : COOLDOWN_MS_INCORRECT);
+
+                if (isCorrect) {
+                    revealedText += data.actual_character;
+                    currentPosition++;
+                    currentAttempts = [];
+                    showFeedback('Правильно!', 'success');
+
+                    // Use backend's experiment_complete flag
+                    if (data.experiment_complete) {
+                        isComplete = true;
+                        completeExperiment();
+                    }
+                    updateDisplay();
+                } else {
+                    currentAttempts.push(character);
+                    const displayChar = character === ' ' ? '␣' : character;
+                    showFeedback(`Неправильно: "${displayChar}". Спробуйте ще.`, 'error');
+                }
+
+                // Use backend's guesses_exhausted flag
+                if (data.guesses_exhausted) {
+                    showFeedback('Спроби закінчились! Раунд завершено, дякую за участь!', 'error');
+                    setTimeout(() => {
+                        window.location.href = `/thank-you?user_id=${userId}`;
+                    }, 3000);
+                    return;
+                }
+
+                updateDisplay();
+            } catch (err) {
+                console.error('Network error:', err);
+                showFeedback('Помилка з\'єднання. Спробуйте ще раз.', 'error');
+                // Only reset isPending on error - startCooldown handles it on success
+                isPending = false;
+                const inputEl = document.getElementById('guess-input');
+                const submitBtn = document.getElementById('submit-guess-btn');
+                inputEl.disabled = false;
+                submitBtn.disabled = false;
+                inputEl.focus();
+            }
+            // No finally block - let startCooldown() manage isPending through its timeout
+        }
+
+        // Update display
+        function updateDisplay() {
+            // Update context - replace spaces with visible character
+            const displayText = revealedText.replace(/ /g, '␣');
+            const contextEl = document.getElementById('context-display');
+            contextEl.innerHTML = displayText + '<span class="cursor"></span>';
+
+            // Update stats
+            document.getElementById('position-stat').textContent = `${currentPosition} / ${sentenceLength}`;
+            document.getElementById('guesses-stat').textContent = `${totalGuessesUsed} / ${maxGuesses}`;
+            const guessedCount = currentPosition - startPosition;
+            const score = guessedCount > 0 ? (totalGuessesUsed / guessedCount) : 0;
+
+            document.getElementById('attempts-stat').textContent = `${score.toFixed(2)} спроб/літеру`;
+
+            // Update attempts display
+            if (currentAttempts.length > 0) {
+                document.getElementById('attempts-display').style.display = 'block';
+                const attemptsDisplay = currentAttempts.map(char => char === ' ' ? '␣' : char).join('  ');
+                document.getElementById('attempts-list').textContent = attemptsDisplay;
+            } else {
+                document.getElementById('attempts-display').style.display = 'none';
+            }
+
+            // Update keyboard display and highlight tried letters
+            const keyboardEl = document.getElementById('keyboard');
+            if (currentAttempts.length >= {{ keyboard_reveal_threshold }}) {
+                keyboardEl.style.display = 'block';
+            } else {
+                keyboardEl.style.display = 'none';
+            }
+
+            // Reset all keys and mark tried ones
+            const allKeys = document.querySelectorAll('.keyboard-key');
+            allKeys.forEach(key => {
+                const letter = key.getAttribute('data-key');
+                if (currentAttempts.includes(letter)) {
+                    key.classList.add('tried');
+                } else {
+                    key.classList.remove('tried');
+                }
+            });
+        }
+
+        // Add click handlers to keyboard keys
+        document.querySelectorAll('.keyboard-key').forEach(key => {
+            key.addEventListener('click', async () => {
+                if (isPending || isComplete) return;
+                const letter = key.getAttribute('data-key');
+                await handleGuessSubmit(letter);
+            });
+        });
+
+        // Complete experiment
+        function completeExperiment() {
+            isComplete = true;
+            document.getElementById('guess-input').disabled = true;
+            document.getElementById('submit-guess-btn').style.display = 'none';
+            document.getElementById('finish-btn').style.display = 'block';
+
+            const gameContainer = document.querySelector('.game-container');
+            const completion = document.createElement('div');
+            completion.className = 'completion-message';
+            completion.innerHTML = '<strong>Речення завершено!</strong><br>Чудова робота! Можете перейти до наступного речення.';
+            gameContainer.insertBefore(completion, gameContainer.firstChild);
+        }
+
+        // Finish and continue
+        document.getElementById('finish-btn').addEventListener('click', () => {
+            // CRITICAL FIX: Wait for any pending requests before reloading
+            // This prevents race conditions where page reloads while backend is processing
+            if (isPending) {
+                console.log('Waiting for pending request to complete...');
+                const checkInterval = setInterval(() => {
+                    if (!isPending) {
+                        clearInterval(checkInterval);
+                        window.location.reload();
+                    }
+                }, 100);
+            } else {
+                window.location.reload();
+            }
+        });
+
+        // Show feedback
+        function showFeedback(message, type) {
+            const feedback = document.getElementById('feedback');
+            feedback.textContent = message;
+            feedback.className = `feedback ${type}`;
+            feedback.style.display = 'block';
+        }
+
+        // Show error
+        function showError(message) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error-page').style.display = 'block';
+            document.getElementById('error-message').textContent = message;
+        }
+
+        // Start game
+        init();
+    </script>
+
+    <div class="footer">
+        <p>Маєте запитання? Напишіть на <a href="mailto:research@arimlabs.ai" style="color: #3498db; text-decoration: none;">research@arimlabs.ai</a></p>
+    </div>
+</body>
+</html>

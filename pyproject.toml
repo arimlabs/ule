@@ -1,0 +1,16 @@
+[project]
+name = "uleserver"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "asyncpg>=0.31.0",
+    "datasets>=4.5.0",
+    "fastapi[standard]>=0.128.0",
+    "matplotlib>=3.10.8",
+    "redis>=5.0.0",
+    "scipy>=1.17.0",
+    "sqlalchemy>=2.0.45",
+    "upstash-redis>=1.5.0",
+]

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дякуємо — Експеримент Шеннона</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 700px;
+            margin: 50px auto;
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+        }
+        p {
+            margin: 15px 0;
+        }
+        .success-box {
+            background: #d4edda;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+            margin: 20px 0;
+        }
+        .success-box strong {
+            color: #155724;
+            font-size: 1.1rem;
+        }
+        .info-box {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #3498db;
+        }
+        .progress-box {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+        }
+        .stats {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2c3e50;
+            text-align: center;
+            margin: 20px 0;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s;
+            display: block;
+            margin: 30px auto;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #ddd;
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .progress-container {
+            background: transparent;
+            padding: 8px 0 12px 0;
+            margin: 0 0 20px 0;
+        }
+        .progress-label {
+            text-align: center;
+            font-weight: 500;
+            color: #666;
+            margin-bottom: 4px;
+            font-size: 0.75rem;
+        }
+        .progress-bar-wrapper {
+            width: 100%;
+            height: 8px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745 0%, #5cb85c 30%, #ffc107 70%, #ff8c00 100%);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+            position: relative;
+        }
+        .progress-text {
+            text-align: center;
+            margin-top: 4px;
+            font-size: 0.7rem;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-container">
+        <div class="progress-label">Прогрес дослідження</div>
+        <div class="progress-bar-wrapper">
+            <div class="progress-bar-fill" style="width: {{ progress_percentage }}%"></div>
+        </div>
+        <div class="progress-text">{{ total_completed }} / {{ total_target }} завершених експериментів</div>
+    </div>
+
+    <h1>Дякуємо!</h1>
+
+    <p>
+        Дякуємо за участь! Ваш внесок допомагає краще зрозуміти передбачуваність мови.
+    </p>
+
+    <div id="sentence-reveal" class="info-box" style="display: none;">
+        <strong>Повне речення:</strong><br>
+        <div style="font-family: 'Courier New', monospace; font-size: 1.2rem; margin-top: 10px; letter-spacing: 1px;" id="sentence-text"></div>
+    </div>
+
+    <div class="stats">
+        Ви завершили: {{ completed_count }} / {{ giveaway_threshold }} експериментів
+    </div>
+
+    {% if eligible_for_giveaway %}
+        <div class="success-box">
+            <strong>🎉 Вітаємо!</strong><br>
+            Ви завершили {{ giveaway_threshold }} або більше експериментів і тепер берете участь у розіграші!
+            Дякуємо за вашу наполегливість.
+        </div>
+
+        <div class="info-box">
+            <strong>Що далі?</strong><br>
+            Ви можете продовжити участь, якщо хочете — кожен додатковий експеримент робить внесок у дослідження.
+        </div>
+    {% else %}
+        <div class="progress-box">
+            <strong>Продовжуйте!</strong><br>
+            Завершіть ще {{ giveaway_threshold - completed_count }}
+            {% if (giveaway_threshold - completed_count) == 1 %}експеримент{% elif (giveaway_threshold - completed_count) < 5 %}експерименти{% else %}експериментів{% endif %},
+            щоб взяти участь у розіграші.
+        </div>
+    {% endif %}
+
+    <button onclick="window.location.href='/experiment?user_id={{ user_id }}'">
+        Почати новий раунд
+    </button>
+
+    <div class="footer">
+        <p>Маєте запитання? Напишіть на <a href="mailto:research@arimlabs.ai" style="color: #3498db; text-decoration: none;">research@arimlabs.ai</a></p>
+    </div>
+
+    <script>
+        // Check if there's a completed sentence to display
+        const completedSentence = localStorage.getItem('completedSentence');
+        if (completedSentence) {
+            const displayText = completedSentence.replace(/ /g, '␣\u200B');
+            document.getElementById('sentence-text').textContent = displayText;
+            document.getElementById('sentence-reveal').style.display = 'block';
+            // Clear it so it doesn't show on subsequent visits
+            localStorage.removeItem('completedSentence');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Гра Шеннона — Вступ</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 700px;
+            margin: 50px auto;
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #34495e;
+            margin-top: 30px;
+        }
+        .instructions {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+            margin: 20px 0;
+        }
+        .instructions ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin: 8px 0;
+        }
+        .consent {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+            margin: 20px 0;
+        }
+        .form-group {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 14px;
+            resize: vertical;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        .error {
+            color: #e74c3c;
+            margin-top: 10px;
+            display: none;
+        }
+        .info-box {
+            background: #e8f4f8;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #3498db;
+        }
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .toggle {
+            position: relative;
+            display: inline-block;
+            width: 56px;
+            height: 30px;
+            margin: 0;
+        }
+        .toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.3s;
+            border-radius: 30px;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+        .toggle input:checked + .toggle-slider {
+            background-color: #3498db;
+        }
+        .toggle input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+        .toggle-label {
+            font-weight: normal;
+            margin: 0;
+            cursor: pointer;
+        }
+        .name-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+        .name-input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        .name-input:disabled {
+            background-color: #f5f5f5;
+            color: #999;
+            cursor: not-allowed;
+        }
+        .demo-container {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .demo-letters {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 4px;
+        }
+        .letter-box {
+            width: 32px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Courier New', monospace;
+            font-size: 1.2rem;
+            font-weight: 700;
+            border-radius: 4px;
+            border: 2px solid #ddd;
+            background: white;
+        }
+        .letter-box.revealed {
+            background: #e8f4f8;
+            border-color: #3498db;
+            color: #2c3e50;
+        }
+        .letter-box.guessing {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        .letter-box.space {
+            border-style: dashed;
+            background: transparent;
+        }
+        .letter-box.space.revealed {
+            background: #f0f8ff;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.4); }
+            50% { transform: scale(1.05); box-shadow: 0 0 0 6px rgba(40, 167, 69, 0); }
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 2px solid #ddd;
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .progress-container {
+            background: transparent;
+            padding: 8px 0 12px 0;
+            margin: 0 0 20px 0;
+        }
+        .progress-label {
+            text-align: center;
+            font-weight: 500;
+            color: #666;
+            margin-bottom: 4px;
+            font-size: 0.75rem;
+        }
+        .progress-bar-wrapper {
+            width: 100%;
+            height: 8px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745 0%, #5cb85c 30%, #ffc107 70%, #ff8c00 100%);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+            position: relative;
+        }
+        .progress-text {
+            text-align: center;
+            margin-top: 4px;
+            font-size: 0.7rem;
+            color: #999;
+        }
+        .giveaway-progress {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            margin: 12px 0;
+            align-items: center;
+        }
+        .giveaway-square {
+            width: 40px;
+            height: 40px;
+            border: 2px solid #ffc107;
+            border-radius: 6px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #999;
+            transition: all 0.3s ease;
+        }
+        .giveaway-square.completed {
+            background: #ffc107;
+            color: white;
+            border-color: #ff9800;
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-container">
+        <div class="progress-label">Прогрес дослідження</div>
+        <div class="progress-bar-wrapper">
+            <div class="progress-bar-fill" style="width: {{ progress_percentage }}%"></div>
+        </div>
+        <div class="progress-text">{{ total_completed }} / {{ total_target }} завершених експериментів</div>
+    </div>
+
+    <h1>Гра Шеннона</h1>
+
+    <div class="info-box">
+        <strong>Вітаємо!</strong> Дякуємо, що долучилися до нашого лінгвістичного дослідження.
+        Зазвичай проходження 2-3 речень займає від 30 до 60 хвилин.
+    </div>
+
+    <h2>Як це працює?</h2>
+
+    <div class="demo-container">
+        <div class="demo-letters">
+            <span class="letter-box revealed">С</span>
+            <span class="letter-box revealed">І</span>
+            <span class="letter-box revealed">В</span>
+            <span class="letter-box space revealed"></span>
+            <span class="letter-box revealed">М</span>
+            <span class="letter-box revealed">Е</span>
+            <span class="letter-box revealed">Т</span>
+            <span class="letter-box revealed">Е</span>
+            <span class="letter-box revealed">Л</span>
+            <span class="letter-box revealed">И</span>
+            <span class="letter-box revealed">К</span>
+            <span class="letter-box space revealed"></span>
+            <span class="letter-box revealed">Н</span>
+            <span class="letter-box revealed">А</span>
+            <span class="letter-box space revealed"></span>
+            <span class="letter-box revealed">Т</span>
+            <span class="letter-box revealed">Р</span>
+            <span class="letter-box revealed">А</span>
+            <span class="letter-box revealed">В</span>
+            <span class="letter-box guessing">И</span>
+        </div>
+    </div>
+
+    <div class="instructions">
+        <p>Ваше завдання — вгадувати текст, літера за літерою:</p>
+        <ul>
+            <li>👁️ <strong>Бачите контекст</strong> — деякі літери вже відкриті, вгадуйте наступну</li>
+            <li>⌨️ <strong>Тільки А-Я та пробіл</strong> — великі літери, без розділових знаків</li>
+            <li>🎯 <strong>Обмежені спроби</strong> — стільки спроб, скільки літер у реченні</li>
+        </ul>
+        <div style="background: #d4edda; border-left: 4px solid #28a745; padding: 12px; margin-top: 15px; border-radius: 4px;">
+            <strong>⚠️ Важливо:</strong> Вичерпання спроб означає успішне закінчення раунду — це НЕ програш!
+            Відгадати все речення повністю практично неможливо. Ваша мета — вгадати якомога більше літер, використовуючи обмежену кількість спроб.
+        </div>
+    </div>
+
+    <div class="consent">
+        <strong>🎁 Розіграш</strong>
+        <ul style="margin: 10px 0; padding-left: 20px;">
+            <li>Учасники, які завершать {{ giveaway_threshold }} або більше речень, беруть участь у розіграші.</li>
+            <li>Одне завершене речення - один шанс</li>
+            <li>Результати розіграшу надійдуть у Telegram 1 лютого 2026 року.</li>
+            <li>Зверніть увагу: Дуже погані результати (випадкове натискання клавіш) можуть бути дискваліфіковані з розіграшу.</li>
+        </ul>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <p style="margin-bottom: 10px;"><strong>Ваш прогрес:</strong></p>
+            <div class="giveaway-progress">
+                {% for i in range(giveaway_threshold) %}
+                <div class="giveaway-square {% if i < user_completed %}completed{% endif %}">
+                    {% if i < user_completed %}✓{% else %}{{ i + 1 }}{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <p style="font-size: 0.9rem; color: #666; margin-top: 8px;">{{ user_completed }} / {{ giveaway_threshold }} завершених експериментів</p>
+        </div>
+
+        <hr style="border: none; border-top: 2px solid #f0c36d; margin: 20px 0;">
+
+        <p><strong>Згода на участь — будь ласка, ознайомтеся:</strong></p>
+        <ul>
+            <li>Участь добровільна — ви можете зупинитися будь-коли</li>
+            <li>Відповіді будуть анонімізовані та використані виключно для наукових цілей</li>
+            <li>Персональні дані не публікуватимуться</li>
+            <li>Дані зберігаються безпечно</li>
+            <li>Учасникам має бути 18 років або більше</li>
+        </ul>
+    </div>
+
+    <form id="consent-form">
+        <div class="form-group">
+            <label for="name" style="margin-bottom: 10px;">Ім'я для подяки</label>
+            <input
+                type="text"
+                id="name"
+                name="name"
+                maxlength="100"
+                placeholder="Ваше ім'я"
+                class="name-input"
+            >
+            <div class="toggle-group" style="margin-top: 10px;">
+                <label class="toggle">
+                    <input type="checkbox" id="opt-out" name="opt-out">
+                    <span class="toggle-slider"></span>
+                </label>
+                <label for="opt-out" class="toggle-label">Не згадувати мене у подяках</label>
+            </div>
+        </div>
+
+        <div class="form-group checkbox-group">
+            <input type="checkbox" id="consent" name="consent" required>
+            <label for="consent" style="margin-bottom: 0; font-weight: normal;">
+                Даю згоду на участь у дослідженні та підтверджую, що мені є 18 років
+            </label>
+        </div>
+
+        <div class="error" id="error-message"></div>
+
+        <button type="submit" id="submit-btn">Почати</button>
+    </form>
+
+    <script>
+        const userId = new URLSearchParams(window.location.search).get('user_id');
+
+        if (!userId) {
+            document.body.innerHTML = '<h1>Помилка</h1><p>Недійсне посилання. Скористайтеся посиланням, яке вам надіслали.</p>';
+        }
+
+        // Opt-out toggle for name field
+        const optOutCheckbox = document.getElementById('opt-out');
+        const nameInput = document.getElementById('name');
+
+        optOutCheckbox.addEventListener('change', () => {
+            nameInput.disabled = optOutCheckbox.checked;
+            if (optOutCheckbox.checked) {
+                nameInput.value = '';
+            } else {
+                nameInput.focus();
+            }
+        });
+
+        document.getElementById('consent-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const consent = document.getElementById('consent').checked;
+            const optOut = optOutCheckbox.checked;
+            const name = nameInput.value.trim();
+            const errorMsg = document.getElementById('error-message');
+            const submitBtn = document.getElementById('submit-btn');
+
+            if (!consent) {
+                errorMsg.textContent = 'Потрібна згода на участь';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Зачекайте...';
+            errorMsg.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/v1/create_user', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        name: optOut ? null : (name || null)
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    window.location.href = `/experiment?user_id=${userId}`;
+                } else {
+                    errorMsg.textContent = data.detail || 'Щось пішло не так. Спробуйте ще раз.';
+                    errorMsg.style.display = 'block';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Почати';
+                }
+            } catch (error) {
+                errorMsg.textContent = 'Проблема зі з\'єднанням. Перевірте інтернет і спробуйте ще раз.';
+                errorMsg.style.display = 'block';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Почати';
+            }
+        });
+    </script>
+
+    <div class="footer">
+        <p>Маєте запитання? Напишіть на <a href="mailto:research@arimlabs.ai" style="color: #3498db; text-decoration: none;">research@arimlabs.ai</a></p>
+    </div>
+</body>
+</html>
